@@ -1,4 +1,3 @@
-
 export type ColorFormat = 'HEX' | 'RGB' | 'HSL' | 'HSB' | 'CMYK';
 
 export interface ColorValue {
@@ -26,6 +25,13 @@ export interface CMYKColor {
   k: number;
 }
 
+export interface ValidationResult {
+  isValid: boolean;
+  hasPreview: boolean;
+  errorMessage: string;
+  color?: ColorValue;
+}
+
 export const parseColor = (input: string, format: ColorFormat): ColorValue => {
   const trimmed = input.trim();
   
@@ -43,6 +49,239 @@ export const parseColor = (input: string, format: ColorFormat): ColorValue => {
     default:
       throw new Error('Unsupported format');
   }
+};
+
+export const parseColorFlexible = (input: string, format: ColorFormat): ValidationResult => {
+  const trimmed = input.trim().toLowerCase();
+  
+  if (trimmed.length < 3) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  try {
+    switch (format) {
+      case 'HEX':
+        return parseHexFlexible(trimmed);
+      case 'RGB':
+        return parseRGBFlexible(trimmed);
+      case 'HSL':
+        return parseHSLFlexible(trimmed);
+      case 'HSB':
+        return parseHSBFlexible(trimmed);
+      case 'CMYK':
+        return parseCMYKFlexible(trimmed);
+      default:
+        return {
+          isValid: false,
+          hasPreview: false,
+          errorMessage: 'Unsupported format'
+        };
+    }
+  } catch (error) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+};
+
+const parseHexFlexible = (hex: string): ValidationResult => {
+  // Remove # if present
+  const cleanHex = hex.replace('#', '');
+  
+  // Check for valid hex characters
+  if (!/^[a-f0-9]*$/i.test(cleanHex)) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  // Handle 3 characters (shorthand)
+  if (cleanHex.length === 3) {
+    const expandedHex = cleanHex.split('').map(char => char + char).join('');
+    const color = parseHex('#' + expandedHex);
+    return {
+      isValid: true,
+      hasPreview: true,
+      errorMessage: '',
+      color
+    };
+  }
+
+  // Handle 6 characters (full hex)
+  if (cleanHex.length === 6) {
+    const color = parseHex('#' + cleanHex);
+    return {
+      isValid: true,
+      hasPreview: true,
+      errorMessage: '',
+      color
+    };
+  }
+
+  // Handle partial input (4-5 characters)
+  if (cleanHex.length >= 4 && cleanHex.length <= 5) {
+    const paddedHex = cleanHex.padEnd(6, '0');
+    const color = parseHex('#' + paddedHex);
+    return {
+      isValid: false,
+      hasPreview: true,
+      errorMessage: '',
+      color
+    };
+  }
+
+  return {
+    isValid: false,
+    hasPreview: false,
+    errorMessage: 'Invalid color code'
+  };
+};
+
+const parseRGBFlexible = (rgb: string): ValidationResult => {
+  const match = rgb.match(/rgb\s*\(\s*(\d*)\s*,?\s*(\d*)\s*,?\s*(\d*)\s*\)?/i);
+  if (!match) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  const r = match[1] ? parseInt(match[1], 10) : 0;
+  const g = match[2] ? parseInt(match[2], 10) : 0;
+  const b = match[3] ? parseInt(match[3], 10) : 0;
+
+  const isComplete = match[1] && match[2] && match[3] && rgb.includes(')');
+  const hasEnoughData = match[1] && (match[2] || match[3]);
+
+  if (r > 255 || g > 255 || b > 255) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  return {
+    isValid: isComplete,
+    hasPreview: hasEnoughData || isComplete,
+    errorMessage: '',
+    color: { r, g, b }
+  };
+};
+
+const parseHSLFlexible = (hsl: string): ValidationResult => {
+  const match = hsl.match(/hsl\s*\(\s*(\d*)\s*,?\s*(\d*)%?\s*,?\s*(\d*)%?\s*\)?/i);
+  if (!match) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  const h = match[1] ? parseInt(match[1], 10) : 0;
+  const s = match[2] ? parseInt(match[2], 10) : 0;
+  const l = match[3] ? parseInt(match[3], 10) : 50;
+
+  const isComplete = match[1] && match[2] && match[3] && hsl.includes(')');
+  const hasEnoughData = match[1] && (match[2] || match[3]);
+
+  if (h > 360 || s > 100 || l > 100) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  const color = hslToRgb(h / 360, s / 100, l / 100);
+
+  return {
+    isValid: isComplete,
+    hasPreview: hasEnoughData || isComplete,
+    errorMessage: '',
+    color
+  };
+};
+
+const parseHSBFlexible = (hsb: string): ValidationResult => {
+  const match = hsb.match(/hsb\s*\(\s*(\d*)\s*,?\s*(\d*)%?\s*,?\s*(\d*)%?\s*\)?/i);
+  if (!match) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  const h = match[1] ? parseInt(match[1], 10) : 0;
+  const s = match[2] ? parseInt(match[2], 10) : 0;
+  const b = match[3] ? parseInt(match[3], 10) : 100;
+
+  const isComplete = match[1] && match[2] && match[3] && hsb.includes(')');
+  const hasEnoughData = match[1] && (match[2] || match[3]);
+
+  if (h > 360 || s > 100 || b > 100) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  const color = hsbToRgb(h / 360, s / 100, b / 100);
+
+  return {
+    isValid: isComplete,
+    hasPreview: hasEnoughData || isComplete,
+    errorMessage: '',
+    color
+  };
+};
+
+const parseCMYKFlexible = (cmyk: string): ValidationResult => {
+  const match = cmyk.match(/cmyk\s*\(\s*(\d*)%?\s*,?\s*(\d*)%?\s*,?\s*(\d*)%?\s*,?\s*(\d*)%?\s*\)?/i);
+  if (!match) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  const c = match[1] ? parseInt(match[1], 10) : 0;
+  const m = match[2] ? parseInt(match[2], 10) : 0;
+  const y = match[3] ? parseInt(match[3], 10) : 0;
+  const k = match[4] ? parseInt(match[4], 10) : 0;
+
+  const isComplete = match[1] && match[2] && match[3] && match[4] && cmyk.includes(')');
+  const hasEnoughData = match[1] && match[2] && (match[3] || match[4]);
+
+  if (c > 100 || m > 100 || y > 100 || k > 100) {
+    return {
+      isValid: false,
+      hasPreview: false,
+      errorMessage: 'Invalid color code'
+    };
+  }
+
+  const color = cmykToRgb(c / 100, m / 100, y / 100, k / 100);
+
+  return {
+    isValid: isComplete,
+    hasPreview: hasEnoughData || isComplete,
+    errorMessage: '',
+    color
+  };
 };
 
 const parseHex = (hex: string): ColorValue => {

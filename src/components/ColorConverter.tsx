@@ -5,28 +5,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Plus, Sun, Moon } from 'lucide-react';
 import { ColorRow } from './ColorRow';
-import { convertColor, parseColor, formatColor, ColorFormat, ColorValue } from '../utils/colorUtils';
+import { convertColor, parseColor, formatColor, parseColorFlexible, ColorFormat, ValidationResult } from '../utils/colorUtils';
 import { useToast } from '@/hooks/use-toast';
 
 interface ColorEntry {
   id: string;
   value: string;
   isValid: boolean;
+  hasPreview: boolean;
+  errorMessage: string;
 }
 
 const ColorConverter = () => {
   const [format, setFormat] = useState<ColorFormat>('HEX');
   const [colors, setColors] = useState<ColorEntry[]>([
-    { id: '1', value: '#FF5733', isValid: true },
-    { id: '2', value: '#33FF57', isValid: true },
-    { id: '3', value: '#3357FF', isValid: true },
+    { id: '1', value: '#FF5733', isValid: true, hasPreview: true, errorMessage: '' },
+    { id: '2', value: '#33FF57', isValid: true, hasPreview: true, errorMessage: '' },
+    { id: '3', value: '#3357FF', isValid: true, hasPreview: true, errorMessage: '' },
   ]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const { toast } = useToast();
 
   const handleFormatChange = useCallback((newFormat: ColorFormat) => {
     const convertedColors = colors.map(color => {
-      if (!color.isValid) return color;
+      if (!color.isValid) return { ...color, hasPreview: false, errorMessage: 'Invalid color code' };
       
       try {
         const parsedColor = parseColor(color.value, format);
@@ -36,10 +38,17 @@ const ColorConverter = () => {
         return {
           ...color,
           value: formattedColor,
-          isValid: true
+          isValid: true,
+          hasPreview: true,
+          errorMessage: ''
         };
       } catch (error) {
-        return { ...color, isValid: false };
+        return { 
+          ...color, 
+          isValid: false, 
+          hasPreview: false, 
+          errorMessage: 'Invalid color code' 
+        };
       }
     });
 
@@ -51,16 +60,25 @@ const ColorConverter = () => {
     setColors(prev => prev.map(color => {
       if (color.id !== id) return color;
       
-      const isValid = value === '' || (() => {
-        try {
-          parseColor(value, format);
-          return true;
-        } catch {
-          return false;
-        }
-      })();
+      if (value === '') {
+        return { 
+          ...color, 
+          value, 
+          isValid: true, 
+          hasPreview: false, 
+          errorMessage: '' 
+        };
+      }
 
-      return { ...color, value, isValid };
+      const validation = parseColorFlexible(value, format);
+      
+      return { 
+        ...color, 
+        value, 
+        isValid: validation.isValid,
+        hasPreview: validation.hasPreview,
+        errorMessage: validation.errorMessage
+      };
     }));
   }, [format]);
 
@@ -87,7 +105,9 @@ const ColorConverter = () => {
     const newColor: ColorEntry = {
       id: Date.now().toString(),
       value: '',
-      isValid: true
+      isValid: true,
+      hasPreview: false,
+      errorMessage: ''
     };
     setColors(prev => [...prev, newColor]);
   }, [colors.length]);
@@ -143,6 +163,8 @@ const ColorConverter = () => {
                   id={color.id}
                   value={color.value}
                   isValid={color.isValid}
+                  hasPreview={color.hasPreview}
+                  errorMessage={color.errorMessage}
                   format={format}
                   onValueChange={handleColorChange}
                   onCopy={handleCopyColor}

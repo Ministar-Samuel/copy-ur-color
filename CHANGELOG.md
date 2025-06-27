@@ -6,6 +6,30 @@ All notable changes to the Copy Color Converter project will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2024-12-27
+
+### Added
+- Flexible color input system with case-insensitive parsing
+- Real-time partial color previews after 3+ characters are entered
+- Progressive validation system with helpful error messages
+- Support for incomplete color codes with visual feedback
+- Enhanced HEX input supporting 3-digit shorthand (e.g., #F00 → #FF0000)
+- Partial color preview for RGB, HSL, HSB, and CMYK formats
+- Visual indicators for partial vs complete color validation
+- Better error messaging for invalid color inputs
+
+### Changed
+- Color input validation now works progressively instead of requiring complete format
+- HEX colors now accept input with or without # prefix
+- All color formats now support case-insensitive input (e.g., RGB or rgb)
+- Color preview updates in real-time as user types
+- Input fields now show different visual states for invalid, partial, and complete colors
+
+### Fixed
+- Color inputs are no longer overly strict about format requirements
+- Users can now see color previews while typing incomplete color codes
+- Better handling of edge cases in color format parsing
+
 ## [1.1.0] - 2024-12-27
 
 ### Added
