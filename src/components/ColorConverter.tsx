@@ -102,20 +102,20 @@ const ColorConverter = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-blue-50 to-indigo-100'}`}>
-      <div className="container mx-auto p-4 h-screen flex flex-col">
-        <Card className="flex-1 flex flex-col backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 border-white/20 shadow-xl">
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-black' : 'bg-white'}`}>
+      <div className="container mx-auto px-8 py-4 h-screen flex flex-col">
+        <Card className="flex-1 flex flex-col bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-lg">
           <CardHeader className="flex-shrink-0">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Color Converter
+              <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${isDarkMode ? 'from-white to-gray-100' : 'from-gray-900 to-black'} bg-clip-text text-transparent`}>
+                Copy Color Converter
               </CardTitle>
               <div className="flex items-center gap-4">
                 <Select value={format} onValueChange={handleFormatChange}>
-                  <SelectTrigger className="w-24 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                  <SelectTrigger className="w-24 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                  <SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-gray-700">
                     <SelectItem value="HEX">HEX</SelectItem>
                     <SelectItem value="RGB">RGB</SelectItem>
                     <SelectItem value="HSL">HSL</SelectItem>
@@ -127,7 +127,7 @@ const ColorConverter = () => {
                   variant="outline"
                   size="icon"
                   onClick={toggleTheme}
-                  className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm hover:scale-110 transition-transform duration-200"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-110 transition-transform duration-200"
                 >
                   {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
@@ -156,7 +156,7 @@ const ColorConverter = () => {
                 <Button
                   onClick={addColor}
                   variant="outline"
-                  className="w-full bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white/70 dark:hover:bg-gray-700/70 transition-all duration-200 hover:scale-[1.02]"
+                  className="w-full bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 hover:scale-[1.02]"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Color ({colors.length}/20)
