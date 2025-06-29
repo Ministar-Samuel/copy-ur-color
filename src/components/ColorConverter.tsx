@@ -1,10 +1,11 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Plus, Sun, Moon } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { ColorRow } from './ColorRow';
+import AddCard from './AddCard';
 import { convertColor, parseColor, formatColor, parseColorFlexible, ColorFormat, ValidationResult } from '../utils/colorUtils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,6 +17,12 @@ interface ColorEntry {
   errorMessage: string;
 }
 
+interface SessionData {
+  format: ColorFormat;
+  colors: string[];
+  theme: boolean;
+}
+
 const ColorConverter = () => {
   const [format, setFormat] = useState<ColorFormat>('HEX');
   const [colors, setColors] = useState<ColorEntry[]>([
@@ -25,6 +32,60 @@ const ColorConverter = () => {
   ]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const { toast } = useToast();
+
+  const MAX_COLORS = 30;
+
+  // Session persistence
+  const saveToSession = useCallback(() => {
+    const sessionData: SessionData = {
+      format,
+      colors: colors.map(color => color.value),
+      theme: isDarkMode
+    };
+    sessionStorage.setItem('colorConverter', JSON.stringify(sessionData));
+  }, [format, colors, isDarkMode]);
+
+  const loadFromSession = useCallback(() => {
+    try {
+      const saved = sessionStorage.getItem('colorConverter');
+      if (saved) {
+        const sessionData: SessionData = JSON.parse(saved);
+        setFormat(sessionData.format);
+        setIsDarkMode(sessionData.theme);
+        
+        const loadedColors = sessionData.colors.map((value, index) => {
+          const validation = parseColorFlexible(value, sessionData.format);
+          return {
+            id: (index + 1).toString(),
+            value,
+            isValid: validation.isValid,
+            hasPreview: validation.hasPreview,
+            errorMessage: validation.errorMessage
+          };
+        });
+        
+        if (loadedColors.length > 0) {
+          setColors(loadedColors);
+        }
+        
+        if (sessionData.theme) {
+          document.documentElement.classList.add('dark');
+        }
+      }
+    } catch (error) {
+      console.log('Failed to load session data:', error);
+    }
+  }, []);
+
+  // Load session data on mount
+  useEffect(() => {
+    loadFromSession();
+  }, [loadFromSession]);
+
+  // Save to session whenever data changes
+  useEffect(() => {
+    saveToSession();
+  }, [saveToSession]);
 
   const handleFormatChange = useCallback((newFormat: ColorFormat) => {
     const convertedColors = colors.map(color => {
@@ -100,7 +161,7 @@ const ColorConverter = () => {
   }, [toast]);
 
   const addColor = useCallback(() => {
-    if (colors.length >= 20) return;
+    if (colors.length >= MAX_COLORS) return;
     
     const newColor: ColorEntry = {
       id: Date.now().toString(),
@@ -127,9 +188,16 @@ const ColorConverter = () => {
         <Card className="flex-1 flex flex-col bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-lg">
           <CardHeader className="flex-shrink-0">
             <div className="flex items-center justify-between">
-              <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${isDarkMode ? 'from-white to-gray-100' : 'from-gray-900 to-black'} bg-clip-text text-transparent`}>
-                Copy Color Converter
-              </CardTitle>
+              <div className="flex items-center gap-4">
+                <img 
+                  src="/lovable-uploads/4c9b86a6-a12e-4b59-afd8-aed19a1cdc34.png" 
+                  alt="Logo" 
+                  className="h-8 w-8 object-contain"
+                />
+                <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${isDarkMode ? 'from-white to-gray-100' : 'from-gray-900 to-black'} bg-clip-text text-transparent`}>
+                  Copy Color Converter
+                </CardTitle>
+              </div>
               <div className="flex items-center gap-4">
                 <Select value={format} onValueChange={handleFormatChange}>
                   <SelectTrigger className="w-24 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
@@ -171,20 +239,15 @@ const ColorConverter = () => {
                   onRemove={colors.length > 1 ? removeColor : undefined}
                 />
               ))}
-            </div>
-            
-            {colors.length < 20 && (
-              <div className="flex-shrink-0 pt-4">
-                <Button
+              
+              {colors.length < MAX_COLORS && (
+                <AddCard
                   onClick={addColor}
-                  variant="outline"
-                  className="w-full bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 hover:scale-[1.02]"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Color ({colors.length}/20)
-                </Button>
-              </div>
-            )}
+                  colorCount={colors.length}
+                  maxColors={MAX_COLORS}
+                />
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
