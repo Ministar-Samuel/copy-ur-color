@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -190,7 +189,7 @@ const ColorConverter = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <img 
-                  src="/lovable-uploads/4c9b86a6-a12e-4b59-afd8-aed19a1cdc34.png" 
+                  src="/lovable-uploads/1f06eca3-3878-4011-b68f-520ba3e52b29.png" 
                   alt="Logo" 
                   className="h-8 w-8 object-contain"
                 />
