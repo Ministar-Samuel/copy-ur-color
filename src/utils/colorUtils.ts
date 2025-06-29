@@ -159,8 +159,8 @@ const parseRGBFlexible = (rgb: string): ValidationResult => {
   const g = match[2] ? parseInt(match[2], 10) : 0;
   const b = match[3] ? parseInt(match[3], 10) : 0;
 
-  const isComplete = match[1] && match[2] && match[3] && rgb.includes(')');
-  const hasEnoughData = match[1] && (match[2] || match[3]);
+  const isComplete = Boolean(match[1] && match[2] && match[3] && rgb.includes(')'));
+  const hasEnoughData = Boolean(match[1] && (match[2] || match[3]));
 
   if (r > 255 || g > 255 || b > 255) {
     return {
@@ -192,8 +192,8 @@ const parseHSLFlexible = (hsl: string): ValidationResult => {
   const s = match[2] ? parseInt(match[2], 10) : 0;
   const l = match[3] ? parseInt(match[3], 10) : 50;
 
-  const isComplete = match[1] && match[2] && match[3] && hsl.includes(')');
-  const hasEnoughData = match[1] && (match[2] || match[3]);
+  const isComplete = Boolean(match[1] && match[2] && match[3] && hsl.includes(')'));
+  const hasEnoughData = Boolean(match[1] && (match[2] || match[3]));
 
   if (h > 360 || s > 100 || l > 100) {
     return {
@@ -227,8 +227,8 @@ const parseHSBFlexible = (hsb: string): ValidationResult => {
   const s = match[2] ? parseInt(match[2], 10) : 0;
   const b = match[3] ? parseInt(match[3], 10) : 100;
 
-  const isComplete = match[1] && match[2] && match[3] && hsb.includes(')');
-  const hasEnoughData = match[1] && (match[2] || match[3]);
+  const isComplete = Boolean(match[1] && match[2] && match[3] && hsb.includes(')'));
+  const hasEnoughData = Boolean(match[1] && (match[2] || match[3]));
 
   if (h > 360 || s > 100 || b > 100) {
     return {
@@ -263,8 +263,8 @@ const parseCMYKFlexible = (cmyk: string): ValidationResult => {
   const y = match[3] ? parseInt(match[3], 10) : 0;
   const k = match[4] ? parseInt(match[4], 10) : 0;
 
-  const isComplete = match[1] && match[2] && match[3] && match[4] && cmyk.includes(')');
-  const hasEnoughData = match[1] && match[2] && (match[3] || match[4]);
+  const isComplete = Boolean(match[1] && match[2] && match[3] && match[4] && cmyk.includes(')'));
+  const hasEnoughData = Boolean(match[1] && match[2] && (match[3] || match[4]));
 
   if (c > 100 || m > 100 || y > 100 || k > 100) {
     return {
