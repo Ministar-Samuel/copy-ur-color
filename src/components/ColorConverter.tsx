@@ -9,6 +9,7 @@ import { ColorSwatch } from './ColorSwatch';
 import AddCard from './AddCard';
 import { convertColor, parseColor, formatColor, parseColorFlexible, ColorFormat, ValidationResult } from '../utils/colorUtils';
 import { useToast } from '@/hooks/use-toast';
+import logo from '@/assets/logo.png';
 interface ColorEntry {
   id: string;
   value: string;
@@ -215,7 +216,7 @@ const ColorConverter = () => {
           <CardHeader className="flex-shrink-0">
             <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center justify-between'}`}>
               <div className="flex items-center gap-4">
-                
+                <img src={logo} alt="Copy Color Converter Logo" className="w-8 h-8" />
                 <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${isDarkMode ? 'from-white to-gray-100' : 'from-gray-900 to-black'} bg-clip-text text-transparent`}>
                   Copy Color Converter
                 </CardTitle>
