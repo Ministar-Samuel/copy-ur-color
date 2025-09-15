@@ -2,8 +2,10 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Grid, List } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { ColorRow } from './ColorRow';
+import { ColorSwatch } from './ColorSwatch';
 import AddCard from './AddCard';
 import { convertColor, parseColor, formatColor, parseColorFlexible, ColorFormat, ValidationResult } from '../utils/colorUtils';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ColorEntry {
   id: string;
   value: string;
+  name?: string;
   isValid: boolean;
   hasPreview: boolean;
   errorMessage: string;
@@ -18,18 +21,21 @@ interface ColorEntry {
 
 interface SessionData {
   format: ColorFormat;
-  colors: string[];
+  colors: { value: string; name?: string }[];
   theme: boolean;
+  viewMode: 'list' | 'swatch';
 }
 
 const ColorConverter = () => {
   const [format, setFormat] = useState<ColorFormat>('HEX');
   const [colors, setColors] = useState<ColorEntry[]>([
-    { id: '1', value: '#FF5733', isValid: true, hasPreview: true, errorMessage: '' },
-    { id: '2', value: '#33FF57', isValid: true, hasPreview: true, errorMessage: '' },
-    { id: '3', value: '#3357FF', isValid: true, hasPreview: true, errorMessage: '' },
+    { id: '1', value: '#FF5733', name: 'Orange Red', isValid: true, hasPreview: true, errorMessage: '' },
+    { id: '2', value: '#33FF57', name: 'Lime Green', isValid: true, hasPreview: true, errorMessage: '' },
+    { id: '3', value: '#3357FF', name: 'Royal Blue', isValid: true, hasPreview: true, errorMessage: '' },
   ]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'swatch'>('list');
+  const isMobile = useIsMobile();
   const { toast } = useToast();
 
   const MAX_COLORS = 30;
@@ -38,11 +44,12 @@ const ColorConverter = () => {
   const saveToSession = useCallback(() => {
     const sessionData: SessionData = {
       format,
-      colors: colors.map(color => color.value),
-      theme: isDarkMode
+      colors: colors.map(color => ({ value: color.value, name: color.name })),
+      theme: isDarkMode,
+      viewMode
     };
     sessionStorage.setItem('colorConverter', JSON.stringify(sessionData));
-  }, [format, colors, isDarkMode]);
+  }, [format, colors, isDarkMode, viewMode]);
 
   const loadFromSession = useCallback(() => {
     try {
@@ -52,11 +59,14 @@ const ColorConverter = () => {
         setFormat(sessionData.format);
         setIsDarkMode(sessionData.theme);
         
-        const loadedColors = sessionData.colors.map((value, index) => {
+        const loadedColors = sessionData.colors.map((colorData, index) => {
+          const value = typeof colorData === 'string' ? colorData : colorData.value;
+          const name = typeof colorData === 'string' ? undefined : colorData.name;
           const validation = parseColorFlexible(value, sessionData.format);
           return {
             id: (index + 1).toString(),
             value,
+            name,
             isValid: validation.isValid,
             hasPreview: validation.hasPreview,
             errorMessage: validation.errorMessage
@@ -69,6 +79,12 @@ const ColorConverter = () => {
         
         if (sessionData.theme) {
           document.documentElement.classList.add('dark');
+        }
+        
+        if (sessionData.viewMode) {
+          setViewMode(sessionData.viewMode);
+        } else {
+          setViewMode(isMobile ? 'list' : 'swatch');
         }
       }
     } catch (error) {
@@ -142,6 +158,12 @@ const ColorConverter = () => {
     }));
   }, [format]);
 
+  const handleNameChange = useCallback((id: string, name: string) => {
+    setColors(prev => prev.map(color => 
+      color.id === id ? { ...color, name: name || undefined } : color
+    ));
+  }, []);
+
   const handleCopyColor = useCallback((value: string, isValid: boolean) => {
     if (!isValid) {
       toast({
@@ -165,6 +187,7 @@ const ColorConverter = () => {
     const newColor: ColorEntry = {
       id: Date.now().toString(),
       value: '',
+      name: undefined,
       isValid: true,
       hasPreview: false,
       errorMessage: ''
@@ -186,7 +209,7 @@ const ColorConverter = () => {
       <div className="container mx-auto px-8 py-4 h-screen flex flex-col">
         <Card className="flex-1 flex flex-col bg-white dark:bg-black border-gray-200 dark:border-gray-800 shadow-lg">
           <CardHeader className="flex-shrink-0">
-            <div className="flex items-center justify-between">
+            <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center justify-between'}`}>
               <div className="flex items-center gap-4">
                 <img 
                   src="/lovable-uploads/1f06eca3-3878-4011-b68f-520ba3e52b29.png" 
@@ -197,12 +220,12 @@ const ColorConverter = () => {
                   Copy Color Converter
                 </CardTitle>
               </div>
-              <div className="flex items-center gap-4">
+              <div className={`flex items-center gap-4 ${isMobile ? 'justify-between' : ''}`}>
                 <Select value={format} onValueChange={handleFormatChange}>
                   <SelectTrigger className="w-24 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-gray-700">
+                  <SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-gray-700 z-50">
                     <SelectItem value="HEX">HEX</SelectItem>
                     <SelectItem value="RGB">RGB</SelectItem>
                     <SelectItem value="HSL">HSL</SelectItem>
@@ -210,6 +233,15 @@ const ColorConverter = () => {
                     <SelectItem value="CMYK">CMYK</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setViewMode(viewMode === 'list' ? 'swatch' : 'list')}
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-110 transition-transform duration-200"
+                  title={`Switch to ${viewMode === 'list' ? 'swatch' : 'list'} view`}
+                >
+                  {viewMode === 'list' ? <Grid className="h-4 w-4" /> : <List className="h-4 w-4" />}
+                </Button>
                 <Button
                   variant="outline"
                   size="icon"
@@ -223,21 +255,44 @@ const ColorConverter = () => {
           </CardHeader>
           
           <CardContent className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-min overflow-auto">
-              {colors.map((color) => (
-                <ColorRow
-                  key={color.id}
-                  id={color.id}
-                  value={color.value}
-                  isValid={color.isValid}
-                  hasPreview={color.hasPreview}
-                  errorMessage={color.errorMessage}
-                  format={format}
-                  onValueChange={handleColorChange}
-                  onCopy={handleCopyColor}
-                  onRemove={colors.length > 1 ? removeColor : undefined}
-                />
-              ))}
+            <div className={`flex-1 overflow-auto ${
+              viewMode === 'list' 
+                ? 'grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-min'
+                : 'grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 auto-rows-min'
+            }`}>
+              {colors.map((color) => 
+                viewMode === 'list' ? (
+                  <ColorRow
+                    key={color.id}
+                    id={color.id}
+                    value={color.value}
+                    name={color.name}
+                    isValid={color.isValid}
+                    hasPreview={color.hasPreview}
+                    errorMessage={color.errorMessage}
+                    format={format}
+                    onValueChange={handleColorChange}
+                    onNameChange={handleNameChange}
+                    onCopy={handleCopyColor}
+                    onRemove={colors.length > 1 ? removeColor : undefined}
+                  />
+                ) : (
+                  <ColorSwatch
+                    key={color.id}
+                    id={color.id}
+                    value={color.value}
+                    name={color.name}
+                    isValid={color.isValid}
+                    hasPreview={color.hasPreview}
+                    errorMessage={color.errorMessage}
+                    format={format}
+                    onValueChange={handleColorChange}
+                    onNameChange={handleNameChange}
+                    onCopy={handleCopyColor}
+                    onRemove={colors.length > 1 ? removeColor : undefined}
+                  />
+                )
+              )}
               
               {colors.length < MAX_COLORS && (
                 <AddCard
